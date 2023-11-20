@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.net.URL?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.canvas.Canvas?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1">
+   <stylesheets>
+      <URL value="@../styles/game.css" />
+   </stylesheets>
+   <right>
+      <VBox prefHeight="500.0" prefWidth="300.0">
+         <children>
+            <Label layoutX="10.0" layoutY="279.0" prefHeight="31.0" prefWidth="300.0" text="Рейтинг:">
+               <font>
+                  <Font size="24.0" />
+               </font>
+               <VBox.margin>
+                  <Insets top="30.0" />
+               </VBox.margin>
+            </Label>
+            <ScrollPane prefHeight="219.0" prefWidth="300.0">
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin>
+               <content>
+                  <VBox prefHeight="205.0" prefWidth="279.0" />
+               </content>
+            </ScrollPane>
+            <Label prefHeight="31.0" prefWidth="300.0" text="Информация об игре:">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label alignment="CENTER" prefHeight="31.0" prefWidth="359.0" text="Ведущий">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label fx:id="master" alignment="CENTER" layoutX="10.0" layoutY="395.0" prefHeight="31.0" prefWidth="359.0">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label alignment="CENTER" layoutX="10.0" layoutY="395.0" prefHeight="31.0" prefWidth="359.0" text="Размер">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label fx:id="size" alignment="CENTER" layoutX="10.0" layoutY="431.0" prefHeight="31.0" prefWidth="359.0">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label alignment="CENTER" layoutX="10.0" layoutY="466.0" prefHeight="31.0" prefWidth="359.0" text="Еда">
+               <font>
+                  <Font size="24.0" />
+               </font>
+            </Label>
+            <Label fx:id="eat" alignment="CENTER" layoutX="10.0" layoutY="501.0" prefHeight="31.0" prefWidth="359.0">
+               <font>
+                  <Font size="24.0" />
+               </font>
+               <VBox.margin>
+                  <Insets bottom="10.0" />
+               </VBox.margin>
+            </Label>
+            <Button fx:id="exitButton" alignment="CENTER" contentDisplay="CENTER" mnemonicParsing="false" onAction="#ExitClicked" prefHeight="39.0" prefWidth="300.0" style="-fx-background-color: #DC143C;" text="ВЫЙТИ" textFill="#fbf8f8">
+               <opaqueInsets>
+                  <Insets />
+               </opaqueInsets>
+               <cursor>
+                  <Cursor fx:constant="HAND" />
+               </cursor>
+               <font>
+                  <Font size="18.0" />
+               </font>
+            </Button>
+         </children></VBox>
+   </right>
+   <center>
+      <Canvas fx:id="canvas" height="500.0" width="500.0" BorderPane.alignment="CENTER">
+         <BorderPane.margin>
+            <Insets left="30.0" />
+         </BorderPane.margin>
+      </Canvas>
+   </center>
+</BorderPane>

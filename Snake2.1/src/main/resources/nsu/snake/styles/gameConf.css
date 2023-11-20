@@ -1,0 +1,12 @@
+.root {
+    -fx-background-image: url('../images/name2.jpg');
+    -fx-background-size: cover;
+    -fx-opacity: 0.8;
+}
+.label {
+    -fx-background-color: white;
+    -fx-opacity: 0.7;
+}
+.button {
+    -fx-background-color: #FF6347;
+}
