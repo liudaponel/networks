@@ -17,10 +17,11 @@ public class HelloController {
         Peer peer = new Peer();
         peer.start(peerName);
 
-        StartWindow start = new StartWindow(peer);
+        Stage stage = new Stage();
+        peer.setSWStage(stage);
+        StartWindow startWindow = new StartWindow(peer);
+        startWindow.start(stage);
         parentStage.close();
-        start.setName(peerName);
-        start.start(new Stage());
     }
 
     private Stage parentStage;

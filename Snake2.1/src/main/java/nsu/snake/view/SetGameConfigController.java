@@ -21,10 +21,12 @@ public class SetGameConfigController {
         String timeStr = time_delay.getText();
         GameInfo.GameConfig conf = new GameInfo.GameConfig(Integer.parseInt(width), Integer.parseInt(height), Integer.parseInt(foodStr), Integer.parseInt(timeStr));
 
-        peer.setNewGameConfig(conf);
-        GameWindow game = new GameWindow(peer);
+        peer.setIamMaster(conf);
+
         parentStage.close();
-        game.start(new Stage());
+        peer.StartGame();
+        //GameWindow game = new GameWindow(peer);
+        //game.start(new Stage());
     }
 
     private Peer peer;

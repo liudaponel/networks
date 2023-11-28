@@ -5,6 +5,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.animation.Timeline;
+import javafx.animation.KeyFrame;
+import javafx.util.Duration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
@@ -38,19 +44,9 @@ public class StartWindow extends Application {
         stage.setTitle("Snake");
         stage.getIcons().add(new Image(GameWindow.class.getResourceAsStream("/nsu/snake/images/icon1.png")));
 
-        GridPane gridPane = controller.getGridPane();
-        // TODO вот я изначально вывела и потом надо обновлять эту информацию как-то
-        // TODO для обновления у меня будет мапа с текущими играми и при нажатии на строку я возьму i-й элемент мапы для JOIN
-        // Обновлять будет контроллер раз в какое-то время по ф-ии UpdateGridPane, там и будет отсылаться запрос на JOIN
-        // и запросы getGames в checkMulticast (через peer)
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
-        controller.AddRow("Вася", 3, 30, 40, 5);
+        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> controller.UpdateGridPane()));
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
 
         scene = new Scene(root, 600, 500);
         stage.setScene(scene);

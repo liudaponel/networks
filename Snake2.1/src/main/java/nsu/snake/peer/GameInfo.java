@@ -43,12 +43,13 @@ public class GameInfo {
         }
     }
     public static class GamePlayer {
-        public GamePlayer(String name, int id, InetAddress ip_address, int port, NodeRole role){
+        public GamePlayer(String name, int id, InetAddress ip_address, int port, NodeRole role, int score){
             this.id = id;
             this.name = name;
             this.port = port;
             this.ip_address = ip_address;
             this.role = role;
+            this.score = score;
         }
         public String getName() {
             return name;
@@ -166,4 +167,5 @@ public class GameInfo {
     public ArrayList<GamePlayer> players = new ArrayList<>();
     public ArrayList<Snake> snakes;
     public ArrayList<Coord> food;
+    public int msg_seq;
 }
