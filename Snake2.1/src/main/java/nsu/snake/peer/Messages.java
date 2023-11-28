@@ -12,16 +12,56 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Messages {
-    public static void SendAnnouncementMsg(){
+    public static void SendAnnouncementMsg(GameInfo curGameState, InetAddress group, int port, MulticastSocket socket, long msg_seq){
+        System.out.println("Send Announcement");
+        SnakesProto.GameConfig conf = SnakesProto.GameConfig.newBuilder()
+                .setFoodStatic(curGameState.config.getFood_static())
+                .setHeight(curGameState.config.getHeight())
+                .setWidth(curGameState.config.getWidth())
+                .setStateDelayMs(curGameState.config.getState_delay_ms())
+                .build();
 
+        ArrayList<SnakesProto.GamePlayer> players = new ArrayList<>();
+        setPlayersToProto(curGameState, players);
+        SnakesProto.GamePlayers pl = SnakesProto.GamePlayers.newBuilder().addAllPlayers(players).build();
+
+        SnakesProto.GameMessage.AnnouncementMsg ann = SnakesProto.GameMessage.AnnouncementMsg.newBuilder()
+                .addGames(SnakesProto.GameAnnouncement.newBuilder()
+                        .setConfig(conf)
+                        .setPlayers(pl)
+                        .setGameName(curGameState.gameName))
+                        .build();
+
+        SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
+
+        GameMsgBuilder.setAnnouncement(ann).setMsgSeq(msg_seq);
+        SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
+
+        byte[] serializedData = gameMsg.toByteArray();
+        DatagramPacket datagram = new DatagramPacket(serializedData, serializedData.length);
+        datagram.setAddress(group);
+        datagram.setPort(port);
+        try{ socket.send(datagram); } catch (IOException ex) {ex.printStackTrace();}
+    }
+
+    public static String RecvAnnouncementMsg(GameInfo gameState, InetAddress sender_addr, int sender_port, SnakesProto.GameMessage msg){
+        SnakesProto.GameAnnouncement ann = msg.getAnnouncement().getGames(0);
+        SnakesProto.GameConfig conf = ann.getConfig();
+        gameState.config = new GameInfo.GameConfig(conf.getWidth(), conf.getHeight(), conf.getFoodStatic(), conf.getStateDelayMs());
+
+        List<SnakesProto.GamePlayer> players = ann.getPlayers().getPlayersList();
+        ArrayList<GameInfo.GamePlayer> myPs = new ArrayList<>();
+        setPlayersFromProto(players, myPs, sender_port, sender_addr);
+        gameState.players = myPs;
+
+        return ann.getGameName();
     }
 
     public static void SendSteerMsg(GameInfo.Direction direction,
                                     InetAddress master_ip,
                                     int master_port,
                                     MulticastSocket socket,
-                                    long msg_seq,
-                                    int sender_id){
+                                    long msg_seq){
         //NORMAL
         SnakesProto.Direction direction2 = null;
         switch (direction){
@@ -80,7 +120,11 @@ public class Messages {
         SnakesProto.GameState.Builder gameStateBuilder = SnakesProto.GameState.newBuilder();
         setSnakesToProto(curState, gameStateBuilder);
         setFoodToProto(curState, gameStateBuilder);
-        setPlayersToProto(curState, gameStateBuilder);
+
+        ArrayList<SnakesProto.GamePlayer> players = new ArrayList<>();
+        setPlayersToProto(curState, players);
+        gameStateBuilder.setPlayers(SnakesProto.GamePlayers.newBuilder().addAllPlayers(players).build());
+
         stateBuilder.setState(gameStateBuilder.build());
 
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
@@ -127,8 +171,7 @@ public class Messages {
         gameStateBuilder.addAllFoods(foodnew);
     }
 
-    private static void setPlayersToProto(GameInfo curState, SnakesProto.GameState.Builder gameStateBuilder){
-        ArrayList<SnakesProto.GamePlayer> players = new ArrayList<>();
+    private static void setPlayersToProto(GameInfo curState, ArrayList<SnakesProto.GamePlayer> players){
         for(int j = 0; j < curState.players.size(); ++j){
             GameInfo.GamePlayer myP = curState.players.get(j);
             SnakesProto.NodeRole newRole = null;
@@ -150,18 +193,24 @@ public class Messages {
                                                                             .build();
             players.add(player);
         }
-        gameStateBuilder.setPlayers(SnakesProto.GamePlayers.newBuilder().addAllPlayers(players).build());
     }
 
-//    public static void RecvStateMsg(GameInfo curGameState, SnakesProto.GameMessage deserializeMsg){
-//        //NORMAL
-//        SnakesProto.GameState stateMsg = deserializeMsg.getState().getState();
-//        ArrayList<GameInfo.Snake> mySs = new ArrayList<>();
-//        setSnakesFromProto(stateMsg, mySs);
-//        ArrayList<GameInfo.GamePlayer> myPs = new ArrayList<>();
-//        setPlayersFromProto(stateMsg, myPs);
-//
-//    }
+    public static void RecvStateMsg(GameInfo curGameState, SnakesProto.GameMessage deserializeMsg){
+        //NORMAL
+        SnakesProto.GameState stateMsg = deserializeMsg.getState().getState();
+        ArrayList<GameInfo.Snake> mySs = new ArrayList<>();
+        setSnakesFromProto(stateMsg, mySs);
+        ArrayList<GameInfo.GamePlayer> myPs = new ArrayList<>();
+        List<SnakesProto.GamePlayer> players = stateMsg.getPlayers().getPlayersList();
+        setPlayersFromProto(players, myPs);
+        ArrayList<GameInfo.Coord> myF = new ArrayList<>();
+        setFoodFromProto(stateMsg, myF);
+
+        curGameState.players = myPs;
+        curGameState.snakes = mySs;
+        curGameState.food = myF;
+        curGameState.state_order = stateMsg.getStateOrder();
+    }
 
     private static void setSnakesFromProto(SnakesProto.GameState stateMsg, ArrayList<GameInfo.Snake> mySs){
         List<SnakesProto.GameState.Snake> snakes = stateMsg.getSnakesList();
@@ -185,25 +234,63 @@ public class Messages {
         }
     }
 
-//    private static void setPlayersFromProto(SnakesProto.GameState stateMsg, ArrayList<GameInfo.GamePlayer> myPs){
-//        List<SnakesProto.GamePlayer> players = stateMsg.getPlayers().getPlayersList();
-//        for(int i = 0; i < players.size(); ++i){
-//            try {
-//            int id = players.get(i).getId();
-//            int port = players.get(i).getPort();
-//            int score = players.get(i).getScore();
-//            String name = players.get(i).getName();
-//            InetAddress addr = InetAddress.getByName(players.get(i).getIpAddress());
-//            GameInfo.NodeRole n = null;
-//            switch (players.get(i).getRole().)
-//
-//            GameInfo.GamePlayer p = new GameInfo.GamePlayer(name, id, addr, port, , score);
-//            myPs.add();
-//            } catch (UnknownHostException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//    }
+    private static void setPlayersFromProto(List<SnakesProto.GamePlayer> players, ArrayList<GameInfo.GamePlayer> myPs){
+        for(int i = 0; i < players.size(); ++i){
+            try {
+            int id = players.get(i).getId();
+            int port = players.get(i).getPort();
+            int score = players.get(i).getScore();
+            String name = players.get(i).getName();
+            InetAddress addr = InetAddress.getByName(players.get(i).getIpAddress());
+            GameInfo.NodeRole n = null;
+            switch (players.get(i).getRole()){
+                case MASTER -> n = GameInfo.NodeRole.MASTER;
+                case DEPUTY -> n = GameInfo.NodeRole.DEPUTY;
+                case NORMAL -> n = GameInfo.NodeRole.NORMAL;
+                case VIEWER -> n = GameInfo.NodeRole.VIEWER;
+            }
+
+            GameInfo.GamePlayer p = new GameInfo.GamePlayer(name, id, addr, port, n, score);
+            myPs.add(p);
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static void setPlayersFromProto(List<SnakesProto.GamePlayer> players, ArrayList<GameInfo.GamePlayer> myPs, int master_port, InetAddress master_addr){
+        for(int i = 0; i < players.size(); ++i){
+            try {
+                int id = players.get(i).getId();
+                int port = players.get(i).getPort();
+                int score = players.get(i).getScore();
+                String name = players.get(i).getName();
+                InetAddress addr = InetAddress.getByName(players.get(i).getIpAddress());
+                GameInfo.NodeRole n = null;
+                switch (players.get(i).getRole()){
+                    case MASTER -> n = GameInfo.NodeRole.MASTER;
+                    case DEPUTY -> n = GameInfo.NodeRole.DEPUTY;
+                    case NORMAL -> n = GameInfo.NodeRole.NORMAL;
+                    case VIEWER -> n = GameInfo.NodeRole.VIEWER;
+                }
+                if(n == GameInfo.NodeRole.MASTER){
+                    port = master_port;
+                    addr = master_addr;
+                }
+
+                GameInfo.GamePlayer p = new GameInfo.GamePlayer(name, id, addr, port, n, score);
+                myPs.add(p);
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    private static void setFoodFromProto(SnakesProto.GameState stateMsg, ArrayList<GameInfo.Coord> myF){
+        List<SnakesProto.GameState.Coord> food = stateMsg.getFoodsList();
+        for(int i = 0; i < food.size(); ++i){
+            myF.add(new GameInfo.Coord(food.get(i).getX(), food.get(i).getY()));
+        }
+    }
 
     public static void SendRoleChangeMsg(){
         //хз там надо разбираться

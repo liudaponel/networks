@@ -28,7 +28,7 @@ public class Model {
         for(int i = 0; i < needFood; ++i){
             if(freeSquares.size() != 0){
                 int rand = random.nextInt((freeSquares.size() - 1));
-                System.out.println("rand: " + rand);
+//                System.out.println("rand: " + rand);
                 field[freeSquares.get(rand).getY() * WIDTH + freeSquares.get(rand).getX()] = -1;
                 food.add(freeSquares.get(rand));
                 freeSquares.remove(rand);
@@ -52,7 +52,7 @@ public class Model {
                     for(int j = 0; j < 5; ++j){
                         int yy = (((y+i) % HEIGHT + HEIGHT) % HEIGHT);
                         int xx = (((x+j) % WIDTH + WIDTH) % WIDTH);
-                        sum += field[yy * HEIGHT + xx];
+                        sum += field[yy * WIDTH + xx];
                     }
                 }
                 if(sum <= 0){
@@ -71,14 +71,14 @@ public class Model {
 
                     Random random = new Random();
                     int i = random.nextInt(4);
-                    if(field[(tails[i].getY() + yy) * HEIGHT + tails[i].getX() + xx] == 0){
+                    if(field[(tails[i].getY() + yy) * WIDTH + tails[i].getX() + xx] == 0){
                         CreateNewSnake(xx, yy, tails, i, dirs, player_id);
                         canJoin = true;
                         break;
                     }
                     else{
                         i = random.nextInt(4);
-                        if(field[(tails[i].getY() + yy) * HEIGHT + tails[i].getX() + xx] == 0){
+                        if(field[(tails[i].getY() + yy) * WIDTH + tails[i].getX() + xx] == 0){
                             CreateNewSnake(xx, yy, tails, i, dirs, player_id);
                             canJoin = true;
                             break;
@@ -96,11 +96,12 @@ public class Model {
         coords.add(new GameInfo.Coord(tails[i].getX(), tails[i].getY()));
         GameInfo.Snake newSnake = new GameInfo.Snake(player_id, coords, 0, dirs[i]);
         field[yy*WIDTH + xx] = player_id;
-        field[tails[i].getY()*WIDTH + tails[i].getX()] = player_id;
+
+        field[(tails[i].getY() + yy) * WIDTH + tails[i].getX() + xx] = player_id;
 
         for(int j = 0; j < freeSquares.size(); ++j){
-            if((freeSquares.get(j).getX() == xx && freeSquares.get(j).getY() == yy) ||
-                    (freeSquares.get(j).getX() == tails[i].getX() && freeSquares.get(j).getY() == tails[i].getY())){
+            if(     (freeSquares.get(j).getX() == xx && freeSquares.get(j).getY() == yy) ||
+                    (freeSquares.get(j).getX() == (tails[i].getX() + xx) && freeSquares.get(j).getY() == (tails[i].getY()) + yy)){
                 freeSquares.remove(j);
                 break;
             }

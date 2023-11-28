@@ -31,19 +31,8 @@ public class Peer {
             myName = name;
             myServer = new Server(myName);
             checker = new CheckMulticast();
-        }
-        try {
-            InetSocketAddress masterAddress = new InetSocketAddress(ports[1]);
-            MulticastSocket socketMult = new MulticastSocket(masterAddress);
-
             Thread checkMulticast = new Thread(checker);
             checkMulticast.start();
-
-            //Thread server = new Thread(myServer);
-            //server.start();
-        }
-        catch(IOException ex){
-            ex.printStackTrace();
         }
     }
 
@@ -51,33 +40,14 @@ public class Peer {
         myServer.setIamMaster(conf);
     }
 
-    public GameInfo getCurState(){
-        return myServer.getCurState();
-    }
-
     public HashMap<String, GameInfo> getGames(){
         return checker.getCurGames();
     }
 
     public void setGameConfig(GameInfo.GameConfig conf){
+        myServer.config = conf;
         myServer.curGameState.config = conf;
     }
-    public int getMyID(){
-        return myServer.getMyID();
-    }
-    public int getMasterPort(){
-        return myServer.master_port;
-    }
-    public InetAddress getMasterAddr(){
-        return myServer.master_ip;
-    }
-    public DatagramSocket getSocket(){
-        return myServer.getSocket();
-    }
-    public GameInfo.NodeRole getMyRole(){
-        return myServer.getMyRole();
-    }
-
     public void StartGame(){
         Stage gwStage = new Stage();
         GameInfo state = myServer.getCurState();

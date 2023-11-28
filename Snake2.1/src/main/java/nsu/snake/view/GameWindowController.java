@@ -35,7 +35,6 @@ public class GameWindowController {
         PIX_HEIGHT = SIZE_SQUARE * height;
 
         this.socket = socket;
-        System.out.println(socket.getPort());
         this.my_id = my_id;
         this.myRole = myRole;
         this.swStage = swStage;
@@ -84,10 +83,10 @@ public class GameWindowController {
                     SIZE_SQUARE, SIZE_SQUARE);
             x = snake.points.get(0).getX();
             y = snake.points.get(0).getY();
-            System.out.println("0" + ": " + snake.points.get(0).getX() + "  " + snake.points.get(0).getY());
+//            System.out.println("0" + ": " + snake.points.get(0).getX() + "  " + snake.points.get(0).getY());
 
             for(int j = 1; j < snake.points.size(); ++j){
-                System.out.println(j + ": " + snake.points.get(j).getX() + "  " + snake.points.get(j).getY());
+//                System.out.println(j + ": " + snake.points.get(j).getX() + "  " + snake.points.get(j).getY());
 
                 color = Color.FUCHSIA;
                 if(snake.player_id == my_id){
@@ -103,8 +102,8 @@ public class GameWindowController {
                         sign = -1;
                     }
                     for (int k = 1; k <= Math.abs(curX); ++k) {
-                        System.out.println("---- " + k + ": " + (((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) +
-                                "  " + ((y % config.getHeight() + config.getHeight()) % config.getHeight()));
+//                        System.out.println("---- " + k + ": " + (((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) +
+//                                "  " + ((y % config.getHeight() + config.getHeight()) % config.getHeight()));
                         graphContext.fillRect((((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) * SIZE_SQUARE,
                                 ((y % config.getHeight() + config.getHeight()) % config.getHeight()) * SIZE_SQUARE,
                                 SIZE_SQUARE, SIZE_SQUARE);
@@ -116,8 +115,8 @@ public class GameWindowController {
                         sign = -1;
                     }
                     for (int k = 1; k <= Math.abs(curY); ++k) {
-                        System.out.println("---- " + k + ": " + (((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) +
-                                "  " + ((y % config.getHeight() + config.getHeight()) % config.getHeight()));
+//                        System.out.println("---- " + k + ": " + (((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) +
+//                                "  " + ((y % config.getHeight() + config.getHeight()) % config.getHeight()));
                         graphContext.fillRect(((x % config.getWidth() + config.getWidth()) % config.getWidth()) * SIZE_SQUARE,
                                 (((y + sign * k) % config.getHeight() + config.getHeight()) % config.getHeight()) * SIZE_SQUARE,
                                 SIZE_SQUARE, SIZE_SQUARE);
@@ -153,8 +152,8 @@ public class GameWindowController {
 
 
     public void setKeysTab(GameInfo.Direction direction){
-        // TODO curState.msg_seq
-        Messages.SendSteerMsg(direction, masterAddr, masterPort, socket, 1, my_id);
+        Messages.SendSteerMsg(direction, masterAddr, masterPort, socket, msg_seq);
+        ++msg_seq;
     }
 
     private Stage parentStage;
@@ -163,6 +162,7 @@ public class GameWindowController {
     private int PIX_HEIGHT = 0;
     private MulticastSocket socket;
     GameInfo curState;
+    int msg_seq = 1;
     @FXML
     private Button exitButton;
     @FXML

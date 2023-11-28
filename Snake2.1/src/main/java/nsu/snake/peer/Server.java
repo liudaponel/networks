@@ -13,6 +13,11 @@ import nsu.snake.view.GameWindowController;
 public class Server {
     Server(String name){
         myName = name;
+        try {
+            group = InetAddress.getByName("224.0.0.1");
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
         Thread reader = new Thread(new Reader());
         reader.start();
     }
@@ -33,8 +38,9 @@ public class Server {
                 ex.printStackTrace();
             }
             while (true) {
-                byte[] buff = new byte[1000];
+                byte[] buff = new byte[4096];
                 DatagramPacket datagram = new DatagramPacket(buff, buff.length);
+                System.out.println("1");
                 try {
                     socket.receive(datagram);
                     sender_addr = datagram.getAddress();
@@ -58,6 +64,7 @@ public class Server {
                             receiver_id = deserializeMsg.getReceiverId();
                             my_id = receiver_id;
                             myPort = socket.getLocalPort();
+
                         }
                         master_ip = sender_addr;
                         master_port = sender_port;
@@ -70,7 +77,7 @@ public class Server {
                         Messages.RecvRoleChangeMsg();
                     }
                     else if (deserializeMsg.hasState()) {
-                        //Messages.RecvStateMsg(curGameState, deserializeMsg);
+                        Messages.RecvStateMsg(curGameState, deserializeMsg);
                     }
                     else if (deserializeMsg.hasJoin()) {
                         if(role == GameInfo.NodeRole.MASTER) {
@@ -125,7 +132,13 @@ public class Server {
             //TODO этот цикл ЗАКАНЧИВАЕТСЯ, когда игра заканчивается!!!! while(gameIsPlaying) AtomicInt gameIsPlaying
             //а еще надо это вызывать из DEPUTY
             while(true){
-
+                try {
+                    Thread.sleep(1000);
+                    ++msg_seq;
+                    Messages.SendAnnouncementMsg(curGameState, group, port, socket, msg_seq);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
@@ -222,6 +235,8 @@ public class Server {
         curGameState.config = conf;
         curGameState.snakes = model.getSnakes();
 
+        setGameName();
+
         Thread senderAnn = new Thread(new SenderAnnounce());
         senderAnn.start();
         Thread senderGS = new Thread(new SenderGameState());
@@ -259,10 +274,14 @@ public class Server {
     public void setGwController(GameWindowController controller){
         gwController = controller;
     }
+    private void setGameName(){
+        curGameState.gameName = myName + "  " + String.valueOf(System.currentTimeMillis());
+    }
 
     private Model model = null;
     private GameInfo.NodeRole role = GameInfo.NodeRole.NORMAL;
-    public GameInfo curGameState = null;
+    public volatile GameInfo curGameState = null;
+    public GameInfo.GameConfig config = null;
     private String myName;
     private int my_id = 1;
     private int myPort = 0;
@@ -272,6 +291,8 @@ public class Server {
     private GameWindowController gwController = null;
     private HashMap<Integer, SnakesProto.Direction> steersFromPlayers = new HashMap<>();
     private HashMap<Integer, Long> msg_seq_lastForPlayers = new HashMap<>();
+    int port = 8888;
+    InetAddress group = null;
     private long msg_seq = 0;
     // TODO HashMap по msg_seq сообщений, на которые не пришел Ack.
     // TODO HashMap по player.id для ping, если чел отвалился

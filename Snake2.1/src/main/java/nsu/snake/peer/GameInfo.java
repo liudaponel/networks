@@ -168,4 +168,5 @@ public class GameInfo {
     public ArrayList<Snake> snakes;
     public ArrayList<Coord> food;
     public int msg_seq;
+    public int state_order;
 }
