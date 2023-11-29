@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.ippolitov.fit.snakes.SnakesProto;
 import nsu.snake.view.GameWindowController;
@@ -13,9 +15,12 @@ import nsu.snake.view.GameWindowController;
 public class Server {
     Server(String name){
         myName = name;
+        curGameState = new GameInfo();
+        canJoin.set(-1);
         try {
             group = InetAddress.getByName("224.0.0.1");
-        } catch (UnknownHostException e) {
+            socket = new MulticastSocket();
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
         Thread reader = new Thread(new Reader());
@@ -32,11 +37,7 @@ public class Server {
 
             InetAddress sender_addr = null;
             int sender_port = 0;
-            try {
-                socket = new MulticastSocket();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+
             while (true) {
                 byte[] buff = new byte[4096];
                 DatagramPacket datagram = new DatagramPacket(buff, buff.length);
@@ -61,15 +62,19 @@ public class Server {
                     else if (deserializeMsg.hasAck()) {
                         Messages.RecvAckMsg();
                         if (msg_seq_last == 0) {
+                            System.out.println("I received first ack");
                             receiver_id = deserializeMsg.getReceiverId();
                             my_id = receiver_id;
                             myPort = socket.getLocalPort();
-
+                            canJoin.set(1);
                         }
                         master_ip = sender_addr;
                         master_port = sender_port;
                     }
                     else if (deserializeMsg.hasError()) {
+                        msg_seq_last = 0;
+                        canJoin.set(0);
+                        System.err.println("I received error");
                         Messages.RecvErrorMsg();
                     }
                     else if (deserializeMsg.hasRoleChange()) {
@@ -86,7 +91,7 @@ public class Server {
                                 String name = deserializeMsg.getJoin().getPlayerName();
                                 int id = AddNewPlayer(name, sender_addr, sender_port);
                                 curGameState.snakes = model.getSnakes();
-                                Messages.SendAckMsg(msg_seq_last, my_id, sender_addr, sender_port, socket, id);
+                                Messages.SendAckMsg(msg_seq_new, my_id, sender_addr, sender_port, socket, id);
                             }
                             else{
                                 Messages.SendErrorMsg();
@@ -225,7 +230,6 @@ public class Server {
 
         role = GameInfo.NodeRole.MASTER;
         model = new Model(conf);
-        curGameState = new GameInfo();
         try {
             AddNewPlayer(myName, InetAddress.getByName("127.0.0.1"), myPort);
             master_ip = InetAddress.getByName("127.0.0.1");
@@ -270,12 +274,24 @@ public class Server {
     public GameInfo.NodeRole getMyRole(){
         return role;
     }
-
     public void setGwController(GameWindowController controller){
         gwController = controller;
     }
     private void setGameName(){
         curGameState.gameName = myName + "  " + String.valueOf(System.currentTimeMillis());
+    }
+    public boolean HasJoinOrError(){
+        long start = System.currentTimeMillis();
+        while (System.currentTimeMillis() - start < 2000){
+            if(canJoin.get() != -1){
+                break;
+            }
+            start = System.currentTimeMillis();
+        }
+        if(canJoin.get() == 1){
+            return true;
+        }
+        return false;
     }
 
     private Model model = null;
@@ -294,6 +310,7 @@ public class Server {
     int port = 8888;
     InetAddress group = null;
     private long msg_seq = 0;
+    private AtomicInteger canJoin = new AtomicInteger();
     // TODO HashMap по msg_seq сообщений, на которые не пришел Ack.
     // TODO HashMap по player.id для ping, если чел отвалился
 }

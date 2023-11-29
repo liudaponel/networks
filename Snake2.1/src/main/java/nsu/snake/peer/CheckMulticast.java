@@ -63,6 +63,7 @@ public class CheckMulticast implements Runnable{
 
                     String gameName = Messages.RecvAnnouncementMsg(gameState, sender_addr, sender_port, deserializeMsg);
                     games.put(gameName, gameState);
+                    System.out.println("FFFFFFFFFFF  " + games.size());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

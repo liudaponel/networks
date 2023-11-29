@@ -63,6 +63,18 @@ public class Peer {
         swStage = st;
     }
 
+    public String getMyName(){
+        return myName;
+    }
+
+    public MulticastSocket getSocket(){
+        return myServer.getSocket();
+    }
+
+    public boolean HasJoinOrError(){
+        return myServer.HasJoinOrError();
+    }
+
     private String myName = "unknown";
     private Server myServer;
     private CheckMulticast checker;

@@ -2,29 +2,36 @@ package nsu.snake.view;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
+import me.ippolitov.fit.snakes.SnakesProto;
 import nsu.snake.peer.GameInfo;
 import nsu.snake.peer.Messages;
 import nsu.snake.peer.Peer;
 import org.controlsfx.control.action.Action;
 
 import java.net.InetAddress;
+import java.net.MulticastSocket;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class StartWindowController {
     public StartWindowController(Stage parentStage, Peer peer){
         this.parentStage = parentStage;
         this.peer = peer;
+        this.myName = peer.getMyName();
+        this.socket = peer.getSocket();
     }
 
     @FXML
     protected void EnterClicked(Button button){
-        int i = GridPane.getRowIndex(button);
+        int i = GridPane.getRowIndex(button) - 1;
         InetAddress masterIp = null;
         int masterPort = 0;
         for(int m = 0; m < gamesArr[i].players.size(); ++m){
@@ -35,8 +42,12 @@ public class StartWindowController {
             }
         }
         peer.setGameConfig(gamesArr[i].config);
+        String gameName = gamesArr[i].gameName;
+        SnakesProto.NodeRole role = SnakesProto.NodeRole.NORMAL;
 
-        boolean joinedSuccessful = Messages.SendJoinMsg(masterIp, masterPort);
+        Messages.SendJoinMsg(masterIp, masterPort, myName, gameName, role, socket);
+        boolean joinedSuccessful = peer.HasJoinOrError();
+
         if(joinedSuccessful) {
             parentStage.hide();
             peer.StartGame();
@@ -55,6 +66,8 @@ public class StartWindowController {
     }
 
     public void UpdateGridPane(){
+        DeleteOldRows();
+
         HashMap<String, GameInfo> games = peer.getGames();
         gamesArr = new GameInfo[games.size()];
         games.values().toArray(gamesArr);
@@ -68,6 +81,17 @@ public class StartWindowController {
             }
             AddRow(master, gamesArr[i].players.size(), gamesArr[i].config.getWidth(), gamesArr[i].config.getHeight(), gamesArr[i].config.getFood_static());
         }
+    }
+
+    private void DeleteOldRows(){
+        Set<Node> deleteNodes = new HashSet<>();
+        for (Node node : gridPane.getChildren()) {
+            Integer rowIndex = GridPane.getRowIndex(node);
+            if (rowIndex != null && rowIndex != 0) {
+                deleteNodes.add(node);
+            }
+        }
+        gridPane.getChildren().removeAll(deleteNodes);
     }
 
     public void AddRow(String NameMaster, int countPlayers, int width, int height, int food) {
@@ -97,4 +121,6 @@ public class StartWindowController {
     private Button newGameButton;
     GameInfo[] gamesArr;
     Peer peer;
+    private String myName = null;
+    private MulticastSocket socket = null;
 }

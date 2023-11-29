@@ -37,11 +37,7 @@ public class Messages {
         GameMsgBuilder.setAnnouncement(ann).setMsgSeq(msg_seq);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
-        byte[] serializedData = gameMsg.toByteArray();
-        DatagramPacket datagram = new DatagramPacket(serializedData, serializedData.length);
-        datagram.setAddress(group);
-        datagram.setPort(port);
-        try{ socket.send(datagram); } catch (IOException ex) {ex.printStackTrace();}
+        SendGameMsg(gameMsg, group, port, socket);
     }
 
     public static String RecvAnnouncementMsg(GameInfo gameState, InetAddress sender_addr, int sender_port, SnakesProto.GameMessage msg){
@@ -91,19 +87,13 @@ public class Messages {
         //NORMAL and MASTER каждый раз при подтверждении
         SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
         SnakesProto.GameMessage.AckMsg AckMsg = SnakesProto.GameMessage.AckMsg.newBuilder().build();
-        GameMsgBuilder.setMsgSeq(msg_seq + 1);
+        GameMsgBuilder.setMsgSeq(msg_seq);
         GameMsgBuilder.setAck(AckMsg);
         GameMsgBuilder.setSenderId(sender_id);
         GameMsgBuilder.setReceiverId(receiver_id);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
-        byte[] serializedData = gameMsg.toByteArray();
-
-        DatagramPacket datagram = new DatagramPacket(serializedData, serializedData.length);
-        datagram.setAddress(receiver_ip);
-        datagram.setPort(receiver_port);
-
-        try{ socket.send(datagram); } catch (IOException ex) {ex.printStackTrace();}
+        SendGameMsg(gameMsg, receiver_ip, receiver_port, socket);
     }
 
     public static void RecvAckMsg(){
@@ -317,14 +307,25 @@ public class Messages {
         // TODO тут надо написать строку с сообщением об ошибке, чтобы потом ее отобразить
     }
 
-    public static boolean SendJoinMsg(InetAddress masterIp, int masterPort){
+    public static void SendJoinMsg(InetAddress masterIp, int masterPort,
+                                      String playerName, String gameName,
+                                      SnakesProto.NodeRole role,
+                                      MulticastSocket socket){
         // NORMAL (только в начале)
         // Для присоединения к игре отправляется сообщение JoinMsg узлу, от которого было получено сообщение AnnouncementMsg.
         // В этом сообщении указывается имя игры, к которой хотим присоединиться (в текущей версии задачи это неважно, оставлено на будущее).
         // Также указывается режим присоединения, стандартный или "только просмотр", во втором случае игрок не получает змейку, а может только просматривать, что происходит на поле.
 
-        // TODO делать сообщение Join и отправлять его
-        return false;
+        SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
+        SnakesProto.GameMessage.JoinMsg join = SnakesProto.GameMessage.JoinMsg.newBuilder()
+                        .setPlayerName(playerName)
+                                .setGameName(gameName)
+                                        .setRequestedRole(role).build();
+        GameMsgBuilder.setMsgSeq(1);
+        GameMsgBuilder.setJoin(join);
+        SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
+
+        SendGameMsg(gameMsg, masterIp, masterPort, socket);
     }
 
     public static boolean RecvJoinMsg(Model model, int player_id){
