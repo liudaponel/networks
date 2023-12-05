@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Messages {
-    public static void SendAnnouncementMsg(GameInfo curGameState, InetAddress group, int port, MulticastSocket socket, long msg_seq){
-        System.out.println("Send Announcement");
+    public static DatagramPacket SendAnnouncementMsg(GameInfo curGameState, InetAddress group, int port, long msg_seq){
+//        System.out.println("Send Announcement");
         SnakesProto.GameConfig conf = SnakesProto.GameConfig.newBuilder()
                 .setFoodStatic(curGameState.config.getFood_static())
                 .setHeight(curGameState.config.getHeight())
@@ -37,7 +37,7 @@ public class Messages {
         GameMsgBuilder.setAnnouncement(ann).setMsgSeq(msg_seq);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
-        SendGameMsg(gameMsg, group, port, socket);
+        return MakeDatagram(gameMsg, group, port);
     }
 
     public static String RecvAnnouncementMsg(GameInfo gameState, InetAddress sender_addr, int sender_port, SnakesProto.GameMessage msg){
@@ -49,14 +49,14 @@ public class Messages {
         ArrayList<GameInfo.GamePlayer> myPs = new ArrayList<>();
         setPlayersFromProto(players, myPs, sender_port, sender_addr);
         gameState.players = myPs;
+        gameState.gameName = ann.getGameName();
 
         return ann.getGameName();
     }
 
-    public static void SendSteerMsg(GameInfo.Direction direction,
+    public static DatagramPacket SendSteerMsg(GameInfo.Direction direction,
                                     InetAddress master_ip,
                                     int master_port,
-                                    MulticastSocket socket,
                                     long msg_seq){
         //NORMAL
         SnakesProto.Direction direction2 = null;
@@ -72,10 +72,9 @@ public class Messages {
         SteerMsgBuilder.setDirection(direction2);
         GameMsgBuilder.setMsgSeq(msg_seq + 1);
         GameMsgBuilder.setSteer(SteerMsgBuilder.build());
-        //GameMsgBuilder.setSenderId(sender_id);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
-        SendGameMsg(gameMsg, master_ip, master_port, socket);
+        return MakeDatagram(gameMsg, master_ip, master_port);
     }
 
     public static int RecvSteerMsg(Model model, SnakesProto.Direction direction, int sender_id){
@@ -83,7 +82,7 @@ public class Messages {
         return model.MoveSnake(sender_id, direction);
     }
 
-    public static void SendAckMsg(long msg_seq, int sender_id, InetAddress receiver_ip, int receiver_port, MulticastSocket socket, int receiver_id){
+    public static DatagramPacket SendAckMsg(long msg_seq, int sender_id, int receiver_id, InetAddress receiver_ip, int receiver_port){
         //NORMAL and MASTER каждый раз при подтверждении
         SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
         SnakesProto.GameMessage.AckMsg AckMsg = SnakesProto.GameMessage.AckMsg.newBuilder().build();
@@ -93,7 +92,7 @@ public class Messages {
         GameMsgBuilder.setReceiverId(receiver_id);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
-        SendGameMsg(gameMsg, receiver_ip, receiver_port, socket);
+        return MakeDatagram(gameMsg, receiver_ip, receiver_port);
     }
 
     public static void RecvAckMsg(){
@@ -102,7 +101,7 @@ public class Messages {
 
     }
 
-    public static void SendStateMsg(long msg_seq, InetAddress receiver_ip, int receiver_port, MulticastSocket socket, GameInfo curState){
+    public static DatagramPacket SendStateMsg(long msg_seq, InetAddress receiver_ip, int receiver_port, GameInfo curState, int state_order){
         //MASTER
         SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
         SnakesProto.GameMessage.StateMsg.Builder stateBuilder = SnakesProto.GameMessage.StateMsg.newBuilder();
@@ -110,6 +109,7 @@ public class Messages {
         SnakesProto.GameState.Builder gameStateBuilder = SnakesProto.GameState.newBuilder();
         setSnakesToProto(curState, gameStateBuilder);
         setFoodToProto(curState, gameStateBuilder);
+        gameStateBuilder.setStateOrder(state_order);
 
         ArrayList<SnakesProto.GamePlayer> players = new ArrayList<>();
         setPlayersToProto(curState, players);
@@ -117,17 +117,22 @@ public class Messages {
 
         stateBuilder.setState(gameStateBuilder.build());
 
-        SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
-        SendGameMsg(gameMsg, receiver_ip, receiver_port, socket);
+        SnakesProto.GameMessage gameMsg = GameMsgBuilder.setState(stateBuilder.build()).build();
+        return MakeDatagram(gameMsg, receiver_ip, receiver_port);
     }
 
-    private static void SendGameMsg(SnakesProto.GameMessage gameMsg, InetAddress receiver_ip, int receiver_port, MulticastSocket socket){
+    private static DatagramPacket MakeDatagram(SnakesProto.GameMessage gameMsg, InetAddress receiver_ip, int receiver_port){
         byte[] serializedData = gameMsg.toByteArray();
         DatagramPacket datagram = new DatagramPacket(serializedData, serializedData.length);
         datagram.setAddress(receiver_ip);
         datagram.setPort(receiver_port);
+        return datagram;
+    }
+
+    public static void SendGameMsg(DatagramPacket datagram, MulticastSocket socket){
         try{ socket.send(datagram); } catch (IOException ex) {ex.printStackTrace();}
     }
+
     private static void setSnakesToProto(GameInfo curState, SnakesProto.GameState.Builder gameStateBuilder){
         ArrayList<GameInfo.Snake> snakes = curState.snakes;
         for(int i = 0; i < snakes.size(); ++i){
@@ -282,8 +287,20 @@ public class Messages {
         }
     }
 
-    public static void SendRoleChangeMsg(){
-        //хз там надо разбираться
+    public static DatagramPacket SendRoleChangeMsg(long msg_seq,
+                                                   int senderRole, int receiverRole,
+                                                   int senderId, int receiverId,
+                                                   int receiver_port, InetAddress receiver_ip){
+        SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
+        SnakesProto.GameMessage.RoleChangeMsg.Builder builder = SnakesProto.GameMessage.RoleChangeMsg.newBuilder();
+        GameMsgBuilder.setMsgSeq(msg_seq);
+        builder.setReceiverRole(SnakesProto.NodeRole.forNumber(receiverRole));
+        builder.setSenderRole(SnakesProto.NodeRole.forNumber(senderRole));
+        GameMsgBuilder.setSenderId(senderId);
+        GameMsgBuilder.setReceiverId(receiverId);
+
+        SnakesProto.GameMessage gameMsg = GameMsgBuilder.setRoleChange(builder.build()).build();
+        return MakeDatagram(gameMsg, receiver_ip, receiver_port);
     }
 
     public static void RecvRoleChangeMsg(){
@@ -307,10 +324,9 @@ public class Messages {
         // TODO тут надо написать строку с сообщением об ошибке, чтобы потом ее отобразить
     }
 
-    public static void SendJoinMsg(InetAddress masterIp, int masterPort,
+    public static DatagramPacket SendJoinMsg(InetAddress masterIp, int masterPort,
                                       String playerName, String gameName,
-                                      SnakesProto.NodeRole role,
-                                      MulticastSocket socket){
+                                      SnakesProto.NodeRole role){
         // NORMAL (только в начале)
         // Для присоединения к игре отправляется сообщение JoinMsg узлу, от которого было получено сообщение AnnouncementMsg.
         // В этом сообщении указывается имя игры, к которой хотим присоединиться (в текущей версии задачи это неважно, оставлено на будущее).
@@ -325,7 +341,7 @@ public class Messages {
         GameMsgBuilder.setJoin(join);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
-        SendGameMsg(gameMsg, masterIp, masterPort, socket);
+        return MakeDatagram(gameMsg, masterIp, masterPort);
     }
 
     public static boolean RecvJoinMsg(Model model, int player_id){

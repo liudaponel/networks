@@ -47,16 +47,17 @@ public class Peer {
     public void setGameConfig(GameInfo.GameConfig conf){
         myServer.config = conf;
         myServer.curGameState.config = conf;
+        myServer.setNormal();
     }
     public void StartGame(){
         Stage gwStage = new Stage();
         GameInfo state = myServer.getCurState();
         GameWindowController gwController = new GameWindowController(gwStage,
                                                 state.config.getWidth(), state.config.getHeight(),
-                                                myServer.getSocket(), myServer.getMyID(), myServer.getMyRole(), swStage);
-        myServer.setGwController(gwController);
+                                                myServer.getSocket(), myServer.getMyID(), myServer.getMyRole(), swStage, myServer);
         gameWindow = new GameWindow(gwController);
         gameWindow.start(gwStage);
+        myServer.setGwController(gwController);
     }
 
     public void setSWStage(Stage st){
@@ -80,5 +81,4 @@ public class Peer {
     private CheckMulticast checker;
     private GameWindow gameWindow;
     private Stage swStage;
-    private int[] ports = new int[2];
 }

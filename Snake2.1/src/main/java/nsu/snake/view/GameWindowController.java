@@ -1,14 +1,19 @@
 package nsu.snake.view;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import nsu.snake.peer.GameInfo;
 import nsu.snake.peer.Messages;
 import nsu.snake.peer.Peer;
+import nsu.snake.peer.Server;
 import nsu.snake.view.StartWindow;
 
 import java.io.IOException;
@@ -16,7 +21,7 @@ import java.net.*;
 import java.lang.Math;
 
 public class GameWindowController {
-    public GameWindowController(Stage parentStage, int width, int height, MulticastSocket socket, int my_id, GameInfo.NodeRole myRole, Stage swStage){
+    public GameWindowController(Stage parentStage, int width, int height, MulticastSocket socket, int my_id, GameInfo.NodeRole myRole, Stage swStage, Server myServer){
         this.parentStage = parentStage;
 
         int max = Integer.max(width, height);
@@ -38,6 +43,7 @@ public class GameWindowController {
         this.my_id = my_id;
         this.myRole = myRole;
         this.swStage = swStage;
+        this.myServer = myServer;
     }
     @FXML
     private void ExitClicked(){
@@ -52,6 +58,7 @@ public class GameWindowController {
             if(curState.players.get(m).getRole() == GameInfo.NodeRole.MASTER){
                 masterAddr = curState.players.get(m).getIp_address();
                 masterPort = curState.players.get(m).getPort();
+                masterName = curState.players.get(m).getName();
                 if(my_id == curState.players.get(m).getId()){
                     try {
                         masterAddr = InetAddress.getByName("127.0.0.1");
@@ -83,11 +90,8 @@ public class GameWindowController {
                     SIZE_SQUARE, SIZE_SQUARE);
             x = snake.points.get(0).getX();
             y = snake.points.get(0).getY();
-//            System.out.println("0" + ": " + snake.points.get(0).getX() + "  " + snake.points.get(0).getY());
 
             for(int j = 1; j < snake.points.size(); ++j){
-//                System.out.println(j + ": " + snake.points.get(j).getX() + "  " + snake.points.get(j).getY());
-
                 color = Color.FUCHSIA;
                 if(snake.player_id == my_id){
                     color = Color.YELLOW;
@@ -102,8 +106,6 @@ public class GameWindowController {
                         sign = -1;
                     }
                     for (int k = 1; k <= Math.abs(curX); ++k) {
-//                        System.out.println("---- " + k + ": " + (((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) +
-//                                "  " + ((y % config.getHeight() + config.getHeight()) % config.getHeight()));
                         graphContext.fillRect((((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) * SIZE_SQUARE,
                                 ((y % config.getHeight() + config.getHeight()) % config.getHeight()) * SIZE_SQUARE,
                                 SIZE_SQUARE, SIZE_SQUARE);
@@ -115,16 +117,12 @@ public class GameWindowController {
                         sign = -1;
                     }
                     for (int k = 1; k <= Math.abs(curY); ++k) {
-//                        System.out.println("---- " + k + ": " + (((x + sign * k) % config.getWidth() + config.getWidth()) % config.getWidth()) +
-//                                "  " + ((y % config.getHeight() + config.getHeight()) % config.getHeight()));
-                        graphContext.fillRect(((x % config.getWidth() + config.getWidth()) % config.getWidth()) * SIZE_SQUARE,
+                       graphContext.fillRect(((x % config.getWidth() + config.getWidth()) % config.getWidth()) * SIZE_SQUARE,
                                 (((y + sign * k) % config.getHeight() + config.getHeight()) % config.getHeight()) * SIZE_SQUARE,
                                 SIZE_SQUARE, SIZE_SQUARE);
                     }
                 }
-//                graphContext.fillRect((((x + snake.points.get(j).getX()) % config.getWidth() + config.getWidth()) % config.getWidth()) * SIZE_SQUARE,
-//                        (((y + snake.points.get(j).getY()) % config.getHeight() + config.getHeight()) % config.getHeight()) * SIZE_SQUARE,
-//                        SIZE_SQUARE, SIZE_SQUARE);
+
                 x += curX;
                 y += curY;
             }
@@ -150,10 +148,24 @@ public class GameWindowController {
         }
     }
 
+    public void UpdateRecords(){
+        Platform.runLater(() -> {
+            master.setText(masterName);
+            eat.setText(curState.config.getFood_static() + " + " + curState.players.size());
+            size.setText(curState.config.getWidth() + " x " + curState.config.getHeight());
+
+            vboxTop.getChildren().clear();
+            for(int i = 0; i < curState.players.size(); ++i) {
+                Label label = new Label(curState.players.get(i).getName() + "  " + curState.players.get(i).getScore());
+                label.setStyle("-fx-font-size: 20px;");
+                vboxTop.getChildren().add(label);
+            }
+        });
+    }
+
 
     public void setKeysTab(GameInfo.Direction direction){
-        Messages.SendSteerMsg(direction, masterAddr, masterPort, socket, msg_seq);
-        ++msg_seq;
+        myServer.SendSteerMsg(direction);
     }
 
     private Stage parentStage;
@@ -163,13 +175,23 @@ public class GameWindowController {
     private MulticastSocket socket;
     GameInfo curState;
     int msg_seq = 1;
-    @FXML
-    private Button exitButton;
-    @FXML
-    private Canvas canvas;
     int my_id = 0;
     GameInfo.NodeRole myRole = null;
     InetAddress masterAddr = null;
     int masterPort = 0;
+    String masterName = "";
     Stage swStage = null;
+    Server myServer = null;
+    @FXML
+    private Button exitButton;
+    @FXML
+    private Canvas canvas;
+    @FXML
+    private Label master;
+    @FXML
+    private Label size;
+    @FXML
+    private Label eat;
+    @FXML
+    private VBox vboxTop;
 }

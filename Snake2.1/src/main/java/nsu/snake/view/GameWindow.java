@@ -37,14 +37,9 @@ public class GameWindow extends Application {
 
             Parent root = fxmlLoader.load();
             BorderPane borderPane = (BorderPane) root;
-            //Canvas canvas = (Canvas)borderPane.getCenter();
             AddBackground(borderPane);
 
             // TODO во всех классах сделать завершение потоков по нажатии на крестик окна
-
-//            Timeline timeline = new Timeline(new KeyFrame(Duration.millis(peer.getCurState().config.getState_delay_ms()), event -> controller.UpdateCanvas()));
-//            timeline.setCycleCount(Timeline.INDEFINITE);
-//            timeline.play();
 
             Scene scene = new Scene(borderPane, 1000, 600);
             stage.setTitle("Snake");
@@ -80,7 +75,7 @@ public class GameWindow extends Application {
     }
 
     private void AddBackground(BorderPane borderPane){
-        String resourceUrl[] = {
+        String[] resourceUrl = {
                 GameWindow.class.getResource("/nsu/snake/images/wall2.jpg").toExternalForm(),
                 GameWindow.class.getResource("/nsu/snake/images/wall4.jpg").toExternalForm(),
                 GameWindow.class.getResource("/nsu/snake/images/wall5.jpg").toExternalForm(),

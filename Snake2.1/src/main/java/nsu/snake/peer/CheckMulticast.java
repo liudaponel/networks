@@ -28,12 +28,11 @@ public class CheckMulticast implements Runnable{
             // взятые из датаграммы, чтобы я потом в startWindow могла находить у мастера ip,port
             MulticastSocket socket = null;
             try {
-//                int port = 9192;
-//                InetAddress group = InetAddress.getByName("239.192.0.4");
-                int port = 8888;
-                InetAddress group = InetAddress.getByName("224.0.0.1");
+                int port = 9192;
+                InetAddress group = InetAddress.getByName("239.192.0.4");
+//                int port = 8888;
+//                InetAddress group = InetAddress.getByName("224.0.0.1");
                 socket = new MulticastSocket(port);
-                //socket.joinGroup(group);
 
                 NetworkInterface networkInterface = findNetworkInterface("Realtek 8821CE Wireless LAN 802.11ac PCI-E NIC");
                 if (networkInterface == null) {
@@ -51,7 +50,7 @@ public class CheckMulticast implements Runnable{
                 DatagramPacket datagram = new DatagramPacket(buff, buff.length);
                 try {
                     socket.receive(datagram);
-                    System.out.println("I receive Announcement");
+//                    System.out.println("I receive Announcement");
 
                     byte[] bytes = new byte[datagram.getLength()];
                     System.arraycopy(datagram.getData(), 0, bytes, 0, datagram.getLength());
@@ -63,7 +62,6 @@ public class CheckMulticast implements Runnable{
 
                     String gameName = Messages.RecvAnnouncementMsg(gameState, sender_addr, sender_port, deserializeMsg);
                     games.put(gameName, gameState);
-                    System.out.println("FFFFFFFFFFF  " + games.size());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -77,7 +75,7 @@ public class CheckMulticast implements Runnable{
             if (iface.isUp() && !iface.isLoopback()) {
                 for (InterfaceAddress addr : iface.getInterfaceAddresses()) {
                     if (addr.getAddress() instanceof Inet4Address) {
-                        //System.err.println(addr.getAddress() + "  " + iface.getDisplayName());
+//                        System.err.println(addr.getAddress() + "  " + iface.getDisplayName());
                         if (iface.getDisplayName().contains(networkName)) {
                             return iface;
                         }

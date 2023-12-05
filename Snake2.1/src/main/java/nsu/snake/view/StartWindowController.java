@@ -15,6 +15,7 @@ import nsu.snake.peer.Messages;
 import nsu.snake.peer.Peer;
 import org.controlsfx.control.action.Action;
 
+import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.HashMap;
@@ -45,8 +46,11 @@ public class StartWindowController {
         String gameName = gamesArr[i].gameName;
         SnakesProto.NodeRole role = SnakesProto.NodeRole.NORMAL;
 
-        Messages.SendJoinMsg(masterIp, masterPort, myName, gameName, role, socket);
+        DatagramPacket datagramPacket = Messages.SendJoinMsg(masterIp, masterPort, myName, gameName, role);
+        Messages.SendGameMsg(datagramPacket, socket);
+        System.out.println("i sent Join Msg  TO: " + datagramPacket.getAddress());
         boolean joinedSuccessful = peer.HasJoinOrError();
+        System.out.println("i'm in HasJoinOrError  " + joinedSuccessful);
 
         if(joinedSuccessful) {
             parentStage.hide();

@@ -26,12 +26,12 @@
                   <Insets top="30.0" />
                </VBox.margin>
             </Label>
-            <ScrollPane prefHeight="219.0" prefWidth="300.0">
+            <ScrollPane fx:id="scrollPane" prefHeight="219.0" prefWidth="300.0">
                <VBox.margin>
                   <Insets bottom="10.0" />
                </VBox.margin>
                <content>
-                  <VBox prefHeight="205.0" prefWidth="279.0" />
+                  <VBox fx:id="vboxTop" prefHeight="205.0" prefWidth="279.0" />
                </content>
             </ScrollPane>
             <Label prefHeight="31.0" prefWidth="300.0" text="Информация об игре:">

@@ -24,6 +24,7 @@ public class Model {
 
     public ArrayList<GameInfo.Coord> SpawnEat(int countPlayers){
         int needFood = config.getFood_static() + countPlayers - food.size();
+//        System.out.println("NEEDED FOOD " + needFood);
         Random random = new Random();
         for(int i = 0; i < needFood; ++i){
             if(freeSquares.size() != 0){
@@ -133,27 +134,39 @@ public class Model {
         int newHeadY = snake.points.get(0).getY();
         switch (direction2){
             case UP -> {
-                newHeadY = (((newHeadY - 1) % HEIGHT + HEIGHT) % HEIGHT );
                 if(snake.head_direction == GameInfo.Direction.DOWN){
-                    return other_player_id;
+                    newHeadY = (((newHeadY + 1) % HEIGHT + HEIGHT) % HEIGHT );
+                    direction2 = GameInfo.Direction.DOWN;
+                }
+                else{
+                    newHeadY = (((newHeadY - 1) % HEIGHT + HEIGHT) % HEIGHT );
                 }
             }
             case DOWN -> {
-                newHeadY = (((newHeadY + 1) % HEIGHT + HEIGHT) % HEIGHT );
                 if(snake.head_direction == GameInfo.Direction.UP){
-                    return other_player_id;
+                    newHeadY = (((newHeadY - 1) % HEIGHT + HEIGHT) % HEIGHT );
+                    direction2 = GameInfo.Direction.UP;
+                }
+                else{
+                    newHeadY = (((newHeadY + 1) % HEIGHT + HEIGHT) % HEIGHT );
                 }
             }
             case RIGHT -> {
-                newHeadX = (((newHeadX + 1) % WIDTH + WIDTH) % WIDTH );
                 if(snake.head_direction == GameInfo.Direction.LEFT){
-                    return other_player_id;
+                    newHeadX = (((newHeadX - 1) % WIDTH + WIDTH) % WIDTH );
+                    direction2 = GameInfo.Direction.LEFT;
+                }
+                else{
+                    newHeadX = (((newHeadX + 1) % WIDTH + WIDTH) % WIDTH );
                 }
             }
             case LEFT -> {
-                newHeadX = (((newHeadX - 1) % WIDTH + WIDTH) % WIDTH );
                 if(snake.head_direction == GameInfo.Direction.RIGHT){
-                    return other_player_id;
+                    newHeadX = (((newHeadX + 1) % WIDTH + WIDTH) % WIDTH );
+                    direction2 = GameInfo.Direction.RIGHT;
+                }
+                else{
+                    newHeadX = (((newHeadX - 1) % WIDTH + WIDTH) % WIDTH );
                 }
             }
         }
@@ -186,6 +199,7 @@ public class Model {
                     break;
                 }
             }
+            return player_id;
         }
         else{
             //значит несколько змеек столкнулись
@@ -197,12 +211,17 @@ public class Model {
             // TODO сделать ZOMBIE, пока что змея просто умирает
             //snake.state = 1;
 
+            Random random = new Random();
             GameInfo.Coord coords = new GameInfo.Coord(snake.points.get(0).getX(), snake.points.get(0).getY());
-            field[coords.getY() * WIDTH + coords.getX()] = 0;
+            int r = (random.nextInt()%2 + 2) %2 - 1;
+            field[coords.getY() * WIDTH + coords.getX()] = r;
+            System.out.println(r);
             for(int j = 1; j < snake.points.size(); ++j){
                 coords.setX(((coords.getX() + snake.points.get(j).getX()) % WIDTH + WIDTH) % WIDTH);
                 coords.setY(((coords.getY() + snake.points.get(j).getY()) % HEIGHT + HEIGHT) % HEIGHT);
-                field[coords.getY() * WIDTH + coords.getX()] = 0;
+                r = (random.nextInt()%2 + 2) %2 - 1;
+                field[coords.getY() * WIDTH + coords.getX()] = r;
+                System.out.println(r);
             }
             snakes.remove(i);
         }

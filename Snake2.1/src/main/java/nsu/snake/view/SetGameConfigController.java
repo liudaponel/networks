@@ -25,8 +25,6 @@ public class SetGameConfigController {
 
         parentStage.close();
         peer.StartGame();
-        //GameWindow game = new GameWindow(peer);
-        //game.start(new Stage());
     }
 
     private Peer peer;
