@@ -21,9 +21,9 @@ public class SetGameConfigController {
         String timeStr = time_delay.getText();
         GameInfo.GameConfig conf = new GameInfo.GameConfig(Integer.parseInt(width), Integer.parseInt(height), Integer.parseInt(foodStr), Integer.parseInt(timeStr));
 
-        peer.setIamMaster(conf);
-
         parentStage.close();
+        peer.StartThreads(GameInfo.NodeRole.MASTER);
+        peer.setIamMaster(conf);
         peer.StartGame();
     }
 

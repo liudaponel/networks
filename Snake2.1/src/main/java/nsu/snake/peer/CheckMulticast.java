@@ -41,6 +41,7 @@ public class CheckMulticast implements Runnable{
                 }
                 SocketAddress socketAddress = new InetSocketAddress(group, port);
                 socket.joinGroup(socketAddress, networkInterface);
+
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -50,7 +51,6 @@ public class CheckMulticast implements Runnable{
                 DatagramPacket datagram = new DatagramPacket(buff, buff.length);
                 try {
                     socket.receive(datagram);
-//                    System.out.println("I receive Announcement");
 
                     byte[] bytes = new byte[datagram.getLength()];
                     System.arraycopy(datagram.getData(), 0, bytes, 0, datagram.getLength());
@@ -61,6 +61,7 @@ public class CheckMulticast implements Runnable{
                     GameInfo gameState = new GameInfo();
 
                     String gameName = Messages.RecvAnnouncementMsg(gameState, sender_addr, sender_port, deserializeMsg);
+
                     games.put(gameName, gameState);
                 } catch (IOException e) {
                     throw new RuntimeException(e);

@@ -14,6 +14,7 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import nsu.snake.peer.GameInfo;
 import nsu.snake.peer.Peer;
@@ -48,6 +49,7 @@ public class GameWindow extends Application {
             stage.show();
 
             setKeys(scene, controller);
+            setClickClose(stage);
         }
         catch (IOException ex){
             ex.printStackTrace();
@@ -74,6 +76,14 @@ public class GameWindow extends Application {
         });
     }
 
+    private void setClickClose(Stage primaryStage){
+        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                System.exit(0);
+            }
+        });
+    }
     private void AddBackground(BorderPane borderPane){
         String[] resourceUrl = {
                 GameWindow.class.getResource("/nsu/snake/images/wall2.jpg").toExternalForm(),

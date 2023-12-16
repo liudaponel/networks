@@ -1,12 +1,14 @@
 package nsu.snake.view;
 
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.animation.Timeline;
 import javafx.animation.KeyFrame;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -51,8 +53,18 @@ public class StartWindow extends Application {
         scene = new Scene(root, 600, 500);
         stage.setScene(scene);
         stage.show();
+
+        setClickClose(stage);
     }
 
+    private void setClickClose(Stage primaryStage){
+        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                System.exit(0);
+            }
+        });
+    }
     public void setName(String name){
         this.name = name;
     }

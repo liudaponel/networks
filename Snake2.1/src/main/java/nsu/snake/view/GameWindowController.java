@@ -49,6 +49,13 @@ public class GameWindowController {
     private void ExitClicked(){
         parentStage.close();
         swStage.show();
+        myServer.FinishGame();
+        Platform.runLater(() -> {
+            master.setText(null);
+            eat.setText(null);
+            size.setText(null);
+            vboxTop.getChildren().clear();
+        });
     }
 
     public void UpdateCanvas(GameInfo curState){
@@ -173,7 +180,7 @@ public class GameWindowController {
     private int PIX_WIDTH = 0;
     private int PIX_HEIGHT = 0;
     private MulticastSocket socket;
-    GameInfo curState;
+    private  volatile GameInfo curState;
     int msg_seq = 1;
     int my_id = 0;
     GameInfo.NodeRole myRole = null;

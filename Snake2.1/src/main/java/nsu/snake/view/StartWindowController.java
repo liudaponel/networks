@@ -48,7 +48,7 @@ public class StartWindowController {
 
         DatagramPacket datagramPacket = Messages.SendJoinMsg(masterIp, masterPort, myName, gameName, role);
         Messages.SendGameMsg(datagramPacket, socket);
-        System.out.println("i sent Join Msg  TO: " + datagramPacket.getAddress());
+        System.out.println("i sent Join Msg  TO: " + datagramPacket.getAddress() + datagramPacket.getPort());
         boolean joinedSuccessful = peer.HasJoinOrError();
         System.out.println("i'm in HasJoinOrError  " + joinedSuccessful);
 

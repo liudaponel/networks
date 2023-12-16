@@ -70,14 +70,14 @@ public class Messages {
         SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
         SnakesProto.GameMessage.SteerMsg.Builder SteerMsgBuilder = SnakesProto.GameMessage.SteerMsg.newBuilder();
         SteerMsgBuilder.setDirection(direction2);
-        GameMsgBuilder.setMsgSeq(msg_seq + 1);
+        GameMsgBuilder.setMsgSeq(msg_seq);
         GameMsgBuilder.setSteer(SteerMsgBuilder.build());
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
 
         return MakeDatagram(gameMsg, master_ip, master_port);
     }
 
-    public static int RecvSteerMsg(Model model, SnakesProto.Direction direction, int sender_id){
+    public static int[] RecvSteerMsg(Model model, SnakesProto.Direction direction, int sender_id){
         //MASTER
         return model.MoveSnake(sender_id, direction);
     }
@@ -91,14 +91,12 @@ public class Messages {
         GameMsgBuilder.setSenderId(sender_id);
         GameMsgBuilder.setReceiverId(receiver_id);
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
+        System.out.println("SEND Ack , msg_seq: " + msg_seq);
 
         return MakeDatagram(gameMsg, receiver_ip, receiver_port);
     }
 
     public static void RecvAckMsg(){
-        //NORMAL только при подключении, либо на ответ мастеру
-        //MASTER каждый раз при подтверждении сообщения
-
     }
 
     public static DatagramPacket SendStateMsg(long msg_seq, InetAddress receiver_ip, int receiver_port, GameInfo curState, int state_order){
@@ -118,6 +116,8 @@ public class Messages {
         stateBuilder.setState(gameStateBuilder.build());
 
         SnakesProto.GameMessage gameMsg = GameMsgBuilder.setState(stateBuilder.build()).build();
+
+        System.out.println("SEND State , msg_seq: " + msg_seq);
         return MakeDatagram(gameMsg, receiver_ip, receiver_port);
     }
 
@@ -307,12 +307,17 @@ public class Messages {
 
     }
 
-    public static void SendPingMsg(){
-        //MASTER
+    public static DatagramPacket SendPingMsg(long msg_seq, int receiver_port, InetAddress receiver_ip){
+        SnakesProto.GameMessage.Builder GameMsgBuilder = SnakesProto.GameMessage.newBuilder();
+        SnakesProto.GameMessage.PingMsg PingMsg = SnakesProto.GameMessage.PingMsg.newBuilder().build();
+        GameMsgBuilder.setMsgSeq(msg_seq);
+        GameMsgBuilder.setPing(PingMsg);
+        SnakesProto.GameMessage gameMsg = GameMsgBuilder.build();
+
+        return MakeDatagram(gameMsg, receiver_ip, receiver_port);
     }
 
     public static void RecvPingMsg(){
-        //NORMAL
     }
 
     public static void RecvErrorMsg(){

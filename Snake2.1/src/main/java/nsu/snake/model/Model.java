@@ -1,5 +1,6 @@
 package nsu.snake.model;
 
+import javafx.scene.paint.Color;
 import javafx.stage.WindowEvent;
 import me.ippolitov.fit.snakes.SnakesProto;
 import nsu.snake.peer.GameInfo;
@@ -22,14 +23,48 @@ public class Model {
         }
     }
 
+    public void setCurGameState(GameInfo curState){
+        //заполняем змей на поле
+        snakes = new ArrayList<>(curState.snakes);
+        for(int i = 0; i < curState.snakes.size(); ++i){
+            GameInfo.Snake snake = curState.snakes.get(i);
+            int x = 0;
+            int y = 0;
+            for(int j = 0; j < snake.points.size(); ++j) {
+                int curX = snake.points.get(j).getX();
+                int curY = snake.points.get(j).getY();
+
+                x = ((curX + x) % WIDTH + WIDTH) % WIDTH;
+                y = ((curY + y) % HEIGHT + HEIGHT) % HEIGHT;
+
+                field[y * WIDTH + x] = snake.player_id;
+            }
+        }
+
+        //добавляем на поле еду
+        for(int i = 0; i < curState.food.size(); ++i){
+            int x = curState.food.get(i).getX();
+            int y = curState.food.get(i).getY();
+            field[y * WIDTH + x] = -1;
+            food.add(new GameInfo.Coord(x, y));
+        }
+
+        //оставшиеся клетки пустые
+        for(int y = 0; y < HEIGHT; ++y){
+            for(int x = 0; x < WIDTH; ++x){
+                if(field[y * WIDTH + x] == 0) {
+                    freeSquares.add(new GameInfo.Coord(x, y));
+                }
+            }
+        }
+    }
+
     public ArrayList<GameInfo.Coord> SpawnEat(int countPlayers){
         int needFood = config.getFood_static() + countPlayers - food.size();
-//        System.out.println("NEEDED FOOD " + needFood);
         Random random = new Random();
         for(int i = 0; i < needFood; ++i){
             if(freeSquares.size() != 0){
                 int rand = random.nextInt((freeSquares.size() - 1));
-//                System.out.println("rand: " + rand);
                 field[freeSquares.get(rand).getY() * WIDTH + freeSquares.get(rand).getX()] = -1;
                 food.add(freeSquares.get(rand));
                 freeSquares.remove(rand);
@@ -111,7 +146,7 @@ public class Model {
         snakes.add(newSnake);
     }
 
-    public int MoveSnake(int player_id, SnakesProto.Direction direction){
+    public int[] MoveSnake(int player_id, SnakesProto.Direction direction){
         int other_player_id = 0;
         GameInfo.Direction direction2 = null;
         switch (direction){
@@ -199,34 +234,62 @@ public class Model {
                     break;
                 }
             }
-            return player_id;
+            int ans[] = new int[1];
+            ans[0] = (-1) * player_id;
+            return ans;
         }
         else{
             //значит несколько змеек столкнулись
             for(int j = 0; j < snakes.size(); ++j){
                 if(snakes.get(j).player_id == field[newHeadY * WIDTH + newHeadX]){
-                    other_player_id = snakes.get(j).player_id;
+                    if(newHeadX == snakes.get(j).points.get(0).getX() && newHeadY == snakes.get(j).points.get(0).getY()){
+                        DeleteSnake(snake, i);
+                        DeleteSnake(snake, j);
+                        int ans[] = new int[2];
+                        ans[0] = snakes.get(j).player_id;
+                        ans[1] = snakes.get(i).player_id;
+                        return ans;
+                    } else{
+                        other_player_id = snakes.get(j).player_id;
+                        DeleteSnake(snake, i);
+                    }
                 }
             }
             // TODO сделать ZOMBIE, пока что змея просто умирает
             //snake.state = 1;
-
-            Random random = new Random();
-            GameInfo.Coord coords = new GameInfo.Coord(snake.points.get(0).getX(), snake.points.get(0).getY());
-            int r = (random.nextInt()%2 + 2) %2 - 1;
-            field[coords.getY() * WIDTH + coords.getX()] = r;
-            System.out.println(r);
-            for(int j = 1; j < snake.points.size(); ++j){
-                coords.setX(((coords.getX() + snake.points.get(j).getX()) % WIDTH + WIDTH) % WIDTH);
-                coords.setY(((coords.getY() + snake.points.get(j).getY()) % HEIGHT + HEIGHT) % HEIGHT);
-                r = (random.nextInt()%2 + 2) %2 - 1;
-                field[coords.getY() * WIDTH + coords.getX()] = r;
-                System.out.println(r);
-            }
-            snakes.remove(i);
         }
+        int ans[] = new int[1];
+        ans[0] = other_player_id;
+        return ans;
+    }
 
-        return other_player_id;
+    public ArrayList<GameInfo.Snake> DeleteSnake(GameInfo.Snake snake, int i){
+        Random random = new Random();
+        GameInfo.Coord coords = new GameInfo.Coord(snake.points.get(0).getX(), snake.points.get(0).getY());
+        boolean r = random.nextBoolean();
+        if(r) field[coords.getY() * WIDTH + coords.getX()] = -1;
+        else field[coords.getY() * WIDTH + coords.getX()] = 0;
+        if(r){
+            food.add(coords);
+        }
+        else{
+            freeSquares.add(coords);
+        }
+        for(int j = 1; j < snake.points.size(); ++j){
+            coords.setX(((coords.getX() + snake.points.get(j).getX()) % WIDTH + WIDTH) % WIDTH);
+            coords.setY(((coords.getY() + snake.points.get(j).getY()) % HEIGHT + HEIGHT) % HEIGHT);
+            r = random.nextBoolean();
+            if(r) field[coords.getY() * WIDTH + coords.getX()] = -1;
+            else field[coords.getY() * WIDTH + coords.getX()] = 0;
+            if(r){
+                food.add(coords);
+            }
+            else{
+                freeSquares.add(coords);
+            }
+        }
+        snakes.remove(i);
+        return snakes;
     }
 
     private void MoveTail(GameInfo.Snake snake){

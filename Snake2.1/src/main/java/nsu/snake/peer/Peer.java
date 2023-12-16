@@ -46,18 +46,20 @@ public class Peer {
 
     public void setGameConfig(GameInfo.GameConfig conf){
         myServer.config = conf;
-        myServer.curGameState.config = conf;
         myServer.setNormal();
     }
     public void StartGame(){
         Stage gwStage = new Stage();
-        GameInfo state = myServer.getCurState();
         GameWindowController gwController = new GameWindowController(gwStage,
-                                                state.config.getWidth(), state.config.getHeight(),
+                                                myServer.config.getWidth(), myServer.config.getHeight(),
                                                 myServer.getSocket(), myServer.getMyID(), myServer.getMyRole(), swStage, myServer);
         gameWindow = new GameWindow(gwController);
         gameWindow.start(gwStage);
         myServer.setGwController(gwController);
+    }
+
+    public void StartThreads(GameInfo.NodeRole role){
+        myServer.StartGame(role);
     }
 
     public void setSWStage(Stage st){
