@@ -164,6 +164,7 @@ public class Model {
                 break;
             }
         }
+        if(snake == null) return new int[2];
 
         int newHeadX = snake.points.get(0).getX();
         int newHeadY = snake.points.get(0).getY();
@@ -265,28 +266,63 @@ public class Model {
 
     public ArrayList<GameInfo.Snake> DeleteSnake(GameInfo.Snake snake, int i){
         Random random = new Random();
-        GameInfo.Coord coords = new GameInfo.Coord(snake.points.get(0).getX(), snake.points.get(0).getY());
+
+        int x = snake.points.get(0).getX();
+        int y = snake.points.get(0).getY();
         boolean r = random.nextBoolean();
-        if(r) field[coords.getY() * WIDTH + coords.getX()] = -1;
-        else field[coords.getY() * WIDTH + coords.getX()] = 0;
+        if(r) field[y * WIDTH + x] = -1;
+        else field[y * WIDTH + x] = 0;
         if(r){
-            food.add(coords);
+            food.add(new GameInfo.Coord(x, y));
         }
         else{
-            freeSquares.add(coords);
+            freeSquares.add(new GameInfo.Coord(x, y));
         }
         for(int j = 1; j < snake.points.size(); ++j){
-            coords.setX(((coords.getX() + snake.points.get(j).getX()) % WIDTH + WIDTH) % WIDTH);
-            coords.setY(((coords.getY() + snake.points.get(j).getY()) % HEIGHT + HEIGHT) % HEIGHT);
-            r = random.nextBoolean();
-            if(r) field[coords.getY() * WIDTH + coords.getX()] = -1;
-            else field[coords.getY() * WIDTH + coords.getX()] = 0;
-            if(r){
-                food.add(coords);
+            int curX = snake.points.get(j).getX();
+            int curY = snake.points.get(j).getY();
+
+            if(curX != 0) {
+                for (int k = 1; k <= Math.abs(curX); ++k) {
+                    r = random.nextBoolean();
+                    int sign = 1;
+                    if(curX < 0){
+                        sign = -1;
+                    }
+                    int nx = ((x + sign * k) % WIDTH + WIDTH) % WIDTH;
+                    int ny = (y % HEIGHT + HEIGHT) % HEIGHT;
+                    if(r) {
+                        field[ny * WIDTH + nx] = -1;
+                        food.add(new GameInfo.Coord(nx, ny));
+                    }
+                    else {
+                        field[ny * WIDTH + nx] = 0;
+                        freeSquares.add(new GameInfo.Coord(nx, ny));
+                    }
+                }
             }
-            else{
-                freeSquares.add(coords);
+            if(curY != 0) {
+                for (int k = 1; k <= Math.abs(curY); ++k) {
+                    r = random.nextBoolean();
+                    int sign = 1;
+                    if(curY < 0){
+                        sign = -1;
+                    }
+                    int nx = (x % WIDTH + WIDTH) % WIDTH;
+                    int ny = ((y + sign * k)% HEIGHT + HEIGHT) % HEIGHT;
+                    if(r) {
+                        field[ny * WIDTH + nx] = -1;
+                        food.add(new GameInfo.Coord(nx, ny));
+                    }
+                    else {
+                        field[ny * WIDTH + nx] = 0;
+                        freeSquares.add(new GameInfo.Coord(nx, ny));
+                    }
+                }
             }
+
+            x += curX;
+            y += curY;
         }
         snakes.remove(i);
         return snakes;

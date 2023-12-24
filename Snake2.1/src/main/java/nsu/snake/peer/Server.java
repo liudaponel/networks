@@ -137,13 +137,28 @@ public class Server {
                                 role = GameInfo.NodeRole.DEPUTY;
                             }
                             else if(deserializeMsg.getRoleChange().getReceiverRole() == SnakesProto.NodeRole.MASTER){
+                                canRecvState = false;
+                                for(int i = 0; i < curGameState.players.size(); ++i) {
+                                    if(curGameState.players.get(i).getRole() == GameInfo.NodeRole.MASTER){
+                                        curGameState.players.get(i).setRole(GameInfo.NodeRole.VIEWER);
+                                        curGameState.players.get(i).setIp_address(sender_addr);
+                                        curGameState.players.get(i).setPort(sender_port);
+                                    }
+                                }
                                 for(int i = 0; i < curGameState.players.size(); ++i) {
                                     if(curGameState.players.get(i).getId() == my_id) {
                                         MakeMeMaster(curGameState.players, i);
                                     }
-                                    else if(curGameState.players.get(i).getRole() == GameInfo.NodeRole.MASTER){
-                                        curGameState.players.get(i).setRole(GameInfo.NodeRole.VIEWER);
+                                }
+
+                                int delete = -1;
+                                for(int s = 0; s < curGameState.snakes.size(); ++s){
+                                    if(curGameState.snakes.get(s).player_id == sender_id){
+                                        delete = s;
                                     }
+                                }
+                                if(delete != -1){
+                                    model.DeleteSnake(curGameState.snakes.get(delete), delete);
                                 }
                             }
                             else if(deserializeMsg.getRoleChange().getSenderRole() == SnakesProto.NodeRole.MASTER){
@@ -156,10 +171,12 @@ public class Server {
                         }
 
                         SendAnswerAck(sender_addr, sender_port, msg_seq_new);
-                    } else if (deserializeMsg.hasState()) {
+                    } else if (deserializeMsg.hasState() && canRecvState) {
                         System.out.println("State from " + sender_addr + ":" + sender_port);
-                        Messages.RecvStateMsg(curGameState, deserializeMsg);
-                        SendAnswerAck(sender_addr, sender_port, msg_seq_new);
+                        if(curGameState != null) {
+                            Messages.RecvStateMsg(curGameState, deserializeMsg);
+                            SendAnswerAck(sender_addr, sender_port, msg_seq_new);
+                        }
                     } else if (deserializeMsg.hasJoin()) {
                         System.out.println("Join from " + sender_addr + ":" + sender_port);
                         if (role == GameInfo.NodeRole.MASTER) {
@@ -265,8 +282,9 @@ public class Server {
         public void run(){
             int state_order = 0;
             while(gameIsPlaying){
-                if(config != null) {
+                if(config != null && curGameState.players != null && curGameState.snakes != null) {
                     if (role == GameInfo.NodeRole.MASTER && model != null) {
+                        System.err.println("update  " + curGameState.players.size() + "  " + curGameState.snakes.size());
                         UpdateSteerMsgs();
                         curGameState.food = model.SpawnEat(curGameState.players.size());
                         for (int i = 0; i < curGameState.players.size(); ++i) {
@@ -276,6 +294,7 @@ public class Server {
                                     ++msg_seq;
                                     DatagramPacket datagramPacket = Messages.SendStateMsg(msg_seq, pl.getIp_address(), pl.getPort(), curGameState, state_order);
                                     Messages.SendGameMsg(datagramPacket, socket);
+                                    System.out.println("STATE TO  " + pl.getIp_address() + pl.getPort() + "  FROM  " + myPort);
                                     if(curGameState.players.size() > 1) {
                                         withoutAcks.put(msg_seq, datagramPacket);
                                         withoutAcksLastTime.put(msg_seq, System.currentTimeMillis());
@@ -321,13 +340,13 @@ public class Server {
                                 break;
                             }
                         }
-                        Long value = entry.getValue();
 
-                        if (System.currentTimeMillis() - value >= 10 * config.getState_delay_ms() && !toDelete.contains(entry.getKey())) {
+                        Long value = entry.getValue();
+                        if (System.currentTimeMillis() - value >= 2 * config.getState_delay_ms() && !toDelete.contains(entry.getKey())) {
                             System.err.println("PLAYER DIED !!!!!!!!!!!!!!!!!!!");
                             ArrayList<GameInfo.GamePlayer> pl = curGameState.players;
                             for (int i = 0; i < pl.size(); ++i) {
-                                if (pl.get(i).getIp_address() == ip && pl.get(i).getPort() == port) {
+                                if (pl.get(i).getIp_address() == ip && pl.get(i).getPort() == port && pl.get(i).getRole() != GameInfo.NodeRole.VIEWER) {
                                     System.out.println("heeeeeee is   " + pl.get(i).getRole()  + " and me  " + role);
                                     if (role == GameInfo.NodeRole.MASTER) {
                                         //мастер заметил, что отвалился зам и назначает нового зама
@@ -343,7 +362,7 @@ public class Server {
                                                 break;
                                             }
                                         }
-                                        curGameState.snakes = model.DeleteSnake(s, j);
+                                        if(s != null) curGameState.snakes = model.DeleteSnake(s, j);
                                     }
                                     else if (role == GameInfo.NodeRole.DEPUTY && pl.get(i).getRole() == GameInfo.NodeRole.MASTER) {
                                         //зам заметил, что мастер отвалился и сам стал мастером
@@ -445,7 +464,7 @@ public class Server {
                 break;
             }
         }
-        curGameState.snakes = model.DeleteSnake(s, j);
+        if(s != null) curGameState.snakes = model.DeleteSnake(s, j);
     }
 
     private void MakeMeMaster(ArrayList<GameInfo.GamePlayer> pl, int i){
@@ -534,10 +553,14 @@ public class Server {
     }
 
     private void UpdateSteerMsgs(){
-        for(int i = 0; i < curGameState.players.size(); ++i) {
-            int sender_id = curGameState.players.get(i).getId();
-            int senderPort = curGameState.players.get(i).getPort();
-            InetAddress senderAddr = curGameState.players.get(i).getIp_address();
+        for(int i = 0; i < curGameState.snakes.size(); ++i) {
+            int sender_id = curGameState.snakes.get(i).player_id;
+            int senderPort = 0;
+            InetAddress senderAddr = null;
+            for(int k = 0; k < curGameState.players.size(); ++k) {
+                senderPort = curGameState.players.get(k).getPort();
+                senderAddr = curGameState.players.get(k).getIp_address();
+            }
             SnakesProto.Direction direction = null;
             if(steersFromPlayers.containsKey(sender_id)){
                 direction = steersFromPlayers.get(sender_id);
@@ -607,6 +630,7 @@ public class Server {
                                         withoutAcksCounter.put(msg_seq, 0);
                                     }
                                     System.out.println("------------------MASTER's SNAKE DIED------------------   " + msg_seq);
+                                    canRecvState = true;
                                 }
                                 break;
                             }
@@ -696,6 +720,7 @@ public class Server {
 
     private void SendAnswerAck(InetAddress sender_addr, int sender_port, long msg_seq_new){
         int id = 0;
+        if(curGameState == null) return;
         ArrayList<GameInfo.GamePlayer> pl = curGameState.players;
         for(int j = 0; j < pl.size(); ++j){
             if(pl.get(j).getIp_address() == sender_addr && pl.get(j).getPort() == sender_port){
@@ -857,4 +882,5 @@ public class Server {
      * Как давно я отправляла сообщения. Если прошло более 0.1 * state_delay_ms, нужно отправить PingMsg
      */
     private volatile long timeMyLastMsg = 0;
+    private volatile boolean canRecvState = true;
 }
